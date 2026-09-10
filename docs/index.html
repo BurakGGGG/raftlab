@@ -1,0 +1,545 @@
+<title>raftlab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap">
+<style>
+  :root {
+    --ground: #e9edee;
+    --surface: #ffffff;
+    --sunk: #f3f6f6;
+    --ink: #131a1c;
+    --muted: #5b696d;
+    --faint: #8a979b;
+    --rule: #d0d9da;
+    --rule-strong: #b3c0c2;
+    --signal: #0c6a62;
+    --alarm: #a33a20;
+    --ok: #2c6a45;
+    --shadow: 0 1px 2px rgba(19, 26, 28, .07);
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --serif: "IBM Plex Serif", Georgia, serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  :root:not([data-theme="light"]) {
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0c1012;
+      --surface: #141b1d;
+      --sunk: #101718;
+      --ink: #dfe6e6;
+      --muted: #93a1a4;
+      --faint: #6d7c80;
+      --rule: #242f31;
+      --rule-strong: #37474a;
+      --signal: #46cdbb;
+      --alarm: #e58466;
+      --ok: #74cd94;
+      --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0c1012;
+    --surface: #141b1d;
+    --sunk: #101718;
+    --ink: #dfe6e6;
+    --muted: #93a1a4;
+    --faint: #6d7c80;
+    --rule: #242f31;
+    --rule-strong: #37474a;
+    --signal: #46cdbb;
+    --alarm: #e58466;
+    --ok: #74cd94;
+    --shadow: none;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 16.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 20px;
+    padding-block: 56px 72px;
+    display: flex;
+    flex-direction: column;
+    gap: 54px;
+  }
+  .prose { max-width: 68ch; display: flex; flex-direction: column; gap: 16px; }
+  p { margin: 0; }
+  a { color: var(--signal); text-underline-offset: 2px; }
+  h1, h2, h3 { font-family: var(--sans); margin: 0; text-wrap: balance; }
+  h1 { font-size: 2.6rem; font-weight: 600; letter-spacing: -.03em; line-height: 1.05; }
+  h2 { font-size: 1.34rem; font-weight: 600; letter-spacing: -.01em; }
+  h3 { font-size: 1.02rem; font-weight: 600; }
+  .eyebrow {
+    font-family: var(--mono); font-size: .7rem; font-weight: 500;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--faint);
+  }
+  code, .mono { font-family: var(--mono); }
+  p code, li code, td code {
+    font-size: .86em; background: var(--sunk); padding: .1em .34em;
+    border-radius: 3px; border: 1px solid var(--rule);
+  }
+
+  /* ---------- masthead ---------- */
+  header { display: flex; flex-direction: column; gap: 20px; }
+  .lede { font-size: 1.18rem; color: var(--muted); max-width: 62ch; }
+  .lede strong { color: var(--ink); font-weight: 500; }
+  .rule { height: 1px; background: var(--rule); }
+
+  .figures { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+  .fig { background: var(--surface); padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
+  .fig .n { font-family: var(--mono); font-size: 1.42rem; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .fig .k { font-family: var(--sans); font-size: .74rem; color: var(--muted); letter-spacing: .02em; }
+
+  /* ---------- sections ---------- */
+  section { display: flex; flex-direction: column; gap: 20px; }
+  .head { display: flex; flex-direction: column; gap: 4px; }
+
+  /* ---------- tables ---------- */
+  .scroll { overflow-x: auto; border: 1px solid var(--rule); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-family: var(--mono); font-size: .8rem; }
+  th, td { text-align: right; padding: 7px 12px; white-space: nowrap; border-bottom: 1px solid var(--rule); }
+  th:first-child, td:first-child { text-align: left; }
+  thead th {
+    font-family: var(--sans); font-size: .7rem; font-weight: 600; color: var(--muted);
+    letter-spacing: .04em; text-transform: uppercase; border-bottom: 1px solid var(--rule-strong);
+    position: sticky; top: 0; background: var(--surface);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { font-variant-numeric: tabular-nums; }
+  tr.clean td:first-child { color: var(--ok); }
+  .det { color: var(--muted); text-align: left !important; font-size: .76rem; }
+  .rate-0 { color: var(--faint); }
+  .rate-hi { color: var(--alarm); font-weight: 600; }
+
+  /* ---------- callouts ---------- */
+  .findings { display: flex; flex-direction: column; gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+  .finding { background: var(--surface); padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; }
+  .finding .tag { font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--signal); }
+  .finding p { font-size: .95rem; max-width: 74ch; }
+
+  pre {
+    margin: 0; background: var(--sunk); border: 1px solid var(--rule);
+    padding: 14px 16px; overflow-x: auto; font-family: var(--mono);
+    font-size: .78rem; line-height: 1.62; color: var(--ink);
+  }
+  pre .c { color: var(--faint); }
+  pre .a { color: var(--alarm); }
+  pre .g { color: var(--ok); }
+
+  ul { margin: 0; padding-left: 1.15em; display: flex; flex-direction: column; gap: 7px; }
+  li::marker { color: var(--faint); }
+
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 22px; }
+  .stack { display: flex; flex-direction: column; gap: 10px; }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; font-size: .9rem; }
+  .kv dt { font-family: var(--mono); font-size: .78rem; color: var(--signal); }
+  .kv dd { margin: 0; color: var(--muted); }
+
+  figure { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  figcaption { font-family: var(--sans); font-size: .78rem; color: var(--muted); }
+  svg { display: block; max-width: 100%; height: auto; }
+
+  footer { font-family: var(--sans); font-size: .8rem; color: var(--faint); display: flex; flex-direction: column; gap: 6px; }
+
+  @media (max-width: 620px) {
+    .figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    h1 { font-size: 2.1rem; }
+    .wrap { gap: 42px; padding-block: 40px 56px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">deterministic simulation testing</div>
+    <h1>raftlab</h1>
+    <p class="lede">A distributed consensus implementation written from scratch, and the simulator
+      that holds it to account: <strong>one seed reproduces an entire cluster's life</strong> —
+      partitions, crashes, GC pauses, clock skew, packet loss — with ten safety invariants checked
+      after every event and every client history checked for linearizability.</p>
+    <div class="figures">
+      <div class="fig"><span class="n" id="s-runs">—</span><span class="k">simulated clusters</span></div>
+      <div class="fig"><span class="n" id="s-events">—</span><span class="k">events checked</span></div>
+      <div class="fig"><span class="n" id="s-hours">—</span><span class="k">of cluster life</span></div>
+      <div class="fig"><span class="n" id="s-speed">—</span><span class="k">faster than real time</span></div>
+    </div>
+    <p class="eyebrow">pure python &middot; no dependencies &middot; 56 tests &middot; 13 injectable bugs
+      &middot; <a href="https://github.com/BurakGGGG/raftlab">source</a>
+      &middot; <a href="tr.html">türkçe</a></p>
+  </header>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">the problem</div>
+      <h2>Consensus bugs do not show up while you are watching</h2>
+    </div>
+    <div class="prose">
+      <p>The failures that matter in a replicated log need a partition to open <em>between two
+        specific messages</em>, or a leader to die in the instant after it appended an entry and
+        before it replicated it. Running a real cluster and hoping to get lucky does not find those,
+        and on the rare occasion it does, you cannot reproduce what you saw.</p>
+      <p>So the world itself is made deterministic: one thread, a virtual clock, one seeded random
+        stream — the approach FoundationDB, TigerBeetle and Antithesis are built on. A failing run
+        stops being a war story and becomes a <em>number</em> you can replay, shrink, and put in a
+        test suite.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">architecture</div>
+      <h2>One seed, four stages</h2>
+    </div>
+    <figure>
+      <svg viewBox="0 0 980 250" role="img" aria-label="Pipeline: a seed derives the world, the event loop drives five Raft nodes, the oracle checks every event, and failures are shrunk into a minimal fault schedule.">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--rule-strong)"></path>
+          </marker>
+        </defs>
+        <g font-family="IBM Plex Mono, monospace" font-size="12">
+          <rect x="6" y="72" width="112" height="60" rx="3" fill="var(--surface)" stroke="var(--signal)" stroke-width="1.5"></rect>
+          <text x="62" y="97" text-anchor="middle" fill="var(--signal)" font-size="13" font-weight="600">seed = 4242</text>
+          <text x="62" y="115" text-anchor="middle" fill="var(--muted)" font-size="10.5">the whole input</text>
+
+          <rect x="158" y="30" width="196" height="144" rx="3" fill="var(--surface)" stroke="var(--rule-strong)"></rect>
+          <text x="172" y="52" fill="var(--ink)" font-size="12" font-weight="600">1 &nbsp;the world</text>
+          <text x="172" y="76" fill="var(--muted)" font-size="10.5">latency &middot; loss &middot; duplication</text>
+          <text x="172" y="94" fill="var(--muted)" font-size="10.5">partitions &middot; crashes &middot; pauses</text>
+          <text x="172" y="112" fill="var(--muted)" font-size="10.5">clock drift and clock freeze</text>
+          <text x="172" y="130" fill="var(--muted)" font-size="10.5">membership churn &middot; clients</text>
+          <text x="172" y="154" fill="var(--faint)" font-size="10">an independent RNG per subsystem</text>
+
+          <rect x="394" y="30" width="196" height="144" rx="3" fill="var(--surface)" stroke="var(--rule-strong)"></rect>
+          <text x="408" y="52" fill="var(--ink)" font-size="12" font-weight="600">2 &nbsp;the cluster</text>
+          <g fill="var(--sunk)" stroke="var(--rule-strong)">
+            <rect x="410" y="70" width="30" height="30" rx="2"></rect>
+            <rect x="446" y="70" width="30" height="30" rx="2"></rect>
+            <rect x="482" y="70" width="30" height="30" rx="2"></rect>
+            <rect x="518" y="70" width="30" height="30" rx="2"></rect>
+            <rect x="554" y="70" width="30" height="30" rx="2"></rect>
+          </g>
+          <g fill="var(--muted)" font-size="10" text-anchor="middle">
+            <text x="425" y="89">n0</text><text x="461" y="89">n1</text><text x="497" y="89">n2</text>
+            <text x="533" y="89">n3</text><text x="569" y="89">n4</text>
+          </g>
+          <text x="408" y="126" fill="var(--muted)" font-size="10.5">pure state machines: no clock,</text>
+          <text x="408" y="142" fill="var(--muted)" font-size="10.5">no sockets, no threads</text>
+          <text x="408" y="162" fill="var(--faint)" font-size="10">step(now, msg) &rarr; [msg]</text>
+
+          <rect x="630" y="30" width="196" height="144" rx="3" fill="var(--surface)" stroke="var(--rule-strong)"></rect>
+          <text x="644" y="52" fill="var(--ink)" font-size="12" font-weight="600">3 &nbsp;the oracle</text>
+          <text x="644" y="76" fill="var(--muted)" font-size="10.5">10 invariants, every event</text>
+          <text x="644" y="94" fill="var(--muted)" font-size="10.5">linearizability of the history</text>
+          <text x="644" y="112" fill="var(--muted)" font-size="10.5">liveness, self-confirming</text>
+          <text x="644" y="140" fill="var(--alarm)" font-size="10.5">&#9679; violation &rarr; stop, report</text>
+
+          <rect x="862" y="72" width="112" height="60" rx="3" fill="var(--surface)" stroke="var(--signal)" stroke-width="1.5"></rect>
+          <text x="918" y="97" text-anchor="middle" fill="var(--signal)" font-size="13" font-weight="600">repro.json</text>
+          <text x="918" y="115" text-anchor="middle" fill="var(--muted)" font-size="10.5">minimal, replayable</text>
+
+          <g stroke="var(--rule-strong)" stroke-width="1.4" fill="none" marker-end="url(#ar)">
+            <path d="M120 102 L152 102"></path>
+            <path d="M356 102 L388 102"></path>
+            <path d="M592 102 L624 102"></path>
+            <path d="M828 102 L856 102"></path>
+            <path d="M918 140 L918 205 L200 205 L200 180"></path>
+          </g>
+          <text x="560" y="222" text-anchor="middle" fill="var(--faint)" font-size="10.5">4 &nbsp;shrink: delete a fault, replay, keep the deletion if it still fails</text>
+        </g>
+      </svg>
+      <figcaption>Every arrow is a function call in one process. Nothing waits on a wall clock, so
+        eight seconds of cluster life costs about fifty milliseconds.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">campaign &middot; 500 seeds per cell</div>
+      <h2>Thirteen deliberate bugs, and whether the harness catches them</h2>
+    </div>
+    <div class="prose">
+      <p>A test harness that has never caught anything is an untested claim. Each row is the same
+        implementation compiled with one deliberate protocol bug — every one of them a mistake that
+        has shipped in a real Raft — run across four different worlds. The top row is the real code.
+        Rates are the share of seeds in which the bug was caught.</p>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>implementation</th><th>normal</th><th>hostile</th><th>slow</th><th>churn</th>
+            <th>1st seed</th><th class="det">caught by</th></tr>
+        </thead>
+        <tbody id="matrix"></tbody>
+      </table>
+    </div>
+    <p class="eyebrow">* figure8_commit is run without the no-op a leader appends on election: that no-op masks it &middot; membership bugs only appear in the churn world, because only there does the configuration change</p>
+  </section>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">what the harness found</div>
+      <h2>Five real bugs in my own code</h2>
+    </div>
+    <div class="prose">
+      <p>None of these were planned. Each came out of running an implementation I believed was
+        correct across thousands of seeds — and each was fixed and then <em>measured</em>.</p>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>finding</th><th class="det">symptom</th><th class="det">fix, measured</th></tr></thead>
+        <tbody id="findings"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">finding 01 &middot; liveness</div>
+      <h2>Raft-as-written recovers slowly — and my first measurement of that was wrong</h2>
+    </div>
+    <div class="cols">
+      <div class="stack">
+        <p>Every safety invariant held over thousands of seeds. Then the liveness check began
+          firing: on a small share of runs, no client request completed after the network healed.
+          The trace shows two nodes taking turns unseating each other — each election carries a
+          higher term, and a higher term forces a working leader to stand down.</p>
+        <p>Nothing there is a coding mistake; it is the algorithm as figure 2 describes it, and it
+          is exactly why the dissertation adds <strong>pre-vote</strong> (§9.6) and
+          <strong>leader stickiness</strong> (§4.2.3).</p>
+      </div>
+      <pre><span class="c">t=6730</span>  node 2: candidate <span class="g">-&gt; LEADER</span>   term 21
+<span class="c">t=6757</span>  node 0: follower  -&gt; candidate term 22
+<span class="c">t=6770</span>  node 2: leader    <span class="a">-&gt; follower</span>  term 22
+<span class="c">t=6907</span>  node 0: candidate <span class="g">-&gt; LEADER</span>   term 22
+<span class="c">t=6937</span>  node 2: follower  -&gt; candidate term 23
+<span class="c">t=6952</span>  node 0: leader    <span class="a">-&gt; follower</span>  term 23
+       <span class="c">... terms climb, nothing commits</span></pre>
+    </div>
+    <div class="prose">
+      <p><strong>But my first write-up of it was wrong, and the harness is what caught that.</strong>
+        "No operation completed inside the window I chose" is not the same claim as "the cluster is
+        down": a cluster repairing a badly diverged log can legitimately need longer than one
+        election. So the liveness check now <em>confirms itself</em> — a run that looks stalled is
+        replayed with the tail doubled, and only a cluster that is still silent is reported. With
+        that in place, every build recovers eventually. Nothing had ever been permanently down.</p>
+      <p>The real effect is a distribution, not a yes/no — and it is worth more than the claim it
+        replaced:</p>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>build</th><th>runs</th><th>median</th><th>p90</th><th>p99</th><th>worst</th><th>over 1s</th></tr></thead>
+        <tbody id="recovery"></tbody>
+      </table>
+    </div>
+    <p class="eyebrow">time from the last fault healing to the cluster serving its next request &middot; 1,000 seeds per cell &middot; no build ever failed to recover</p>
+  </section>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">finding 02 &middot; the oracle</div>
+      <h2>Two bugs were invisible, and the fault injector was not to blame</h2>
+    </div>
+    <div class="findings">
+      <div class="finding">
+        <span class="tag">commit_index_unclamped &middot; 0 in 6,000 &rarr; 9 in 10</span>
+        <h3>Watch the cause, not the consequence</h3>
+        <p>A follower that adopts the leader's commit index verbatim should eventually apply an
+          entry that gets rolled back. It never did: a conflicting append truncates the log all the
+          way to the end, so a divergent tail never survives long enough to be applied — one correct
+          mechanism masking another's bug. The <em>cause</em>, though, is a single comparison:
+          <code>commitIndex &gt; lastLogIndex</code> is impossible in correct Raft. Checking that
+          moved detection from zero in six thousand runs to nine runs in ten.</p>
+      </div>
+      <div class="finding">
+        <span class="tag">no_persist_vote &middot; two leaders needed &rarr; one double vote is enough</span>
+        <h3>A vote is a durable promise</h3>
+        <p>A node that forgets its vote across a restart can vote twice in one term. Waiting for the
+          textbook consequence means waiting for <em>both</em> candidates to assemble a majority — a
+          coincidence on top of a coincidence. Watching for the double vote itself is just as sound
+          an invariant, and finds it hundreds of seeds sooner.</p>
+      </div>
+      <div class="finding">
+        <span class="tag">the lesson</span>
+        <h3>Oracle sensitivity buys more than fault-injector reach</h3>
+        <p>When a bug survives a fuzz campaign, the instinct is to inject harder. Correlated fault
+          bursts and leader-targeted chaos bought roughly 4× on the hardest bug here. Two new
+          invariants — cheap, sound, four lines each — bought several orders of magnitude.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">controlled experiment &middot; §6.4</div>
+      <h2>Three ways to answer a read, and a machine whose clock stopped</h2>
+    </div>
+    <div class="prose">
+      <p>Same seeds, same faults, same world — only the read path changes. Reading through the log
+        replicates every read like a write. <strong>ReadIndex</strong> confirms leadership with one
+        heartbeat round and answers from the leader's own state machine. A <strong>leader lease</strong>
+        answers with no round trip at all, for as long as the leader believes its lease holds.</p>
+      <p>A lease assumes clocks have bounded error. In this fault model a pause can also <em>stop the
+        clock</em> — a suspended VM — and a leader that wakes up believes almost no time has passed:</p>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>read path</th><th>seeds</th><th>stale reads</th><th>p50</th><th>p99</th><th>log/run</th><th class="det">note</th></tr></thead>
+        <tbody id="reads"></tbody>
+      </table>
+    </div>
+    <div class="cols">
+      <pre><span class="c">t=1467</span>  node 0 becomes LEADER          term 2
+<span class="c">t=1918</span>  <span class="a">node 0 PAUSES — and its clock stops</span>
+<span class="c">t=2415</span>  node 4 becomes LEADER          term 4
+<span class="c">t=2894</span>  node 0 wakes; by its own clock
+       almost no time has passed, so
+       <span class="a">its lease still looks valid</span>
+<span class="c">t=3581</span>  node 0 finally learns it was deposed</pre>
+      <div class="stack">
+        <p>In that window the deposed leader answers reads from state that is no longer current. No
+          internal Raft invariant can see it — the log is replicated perfectly. Only the end-to-end
+          linearizability checker catches it.</p>
+        <p>With clock freezes disabled (<code>--freeze 0.0</code>) lease reads are clean in
+          <em>every</em> run. So this is not proof that leases are wrong; it is a measurement of the
+          assumption they rest on, and of what happens when it fails.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">exploration quality</div>
+      <h2>What does the fuzzer actually reach?</h2>
+    </div>
+    <div class="prose">
+      <p>A campaign that never produces a snapshot install has not tested InstallSnapshot, however
+        many seeds it burned. So every run records the interesting situations it reached:</p>
+    </div>
+    <div class="scroll"><table>
+      <thead><tr><th>situation reached</th><th>runs</th><th>share</th><th class="det"></th></tr></thead>
+      <tbody id="coverage"></tbody>
+    </table></div>
+    <p class="eyebrow">1,600 runs across four worlds &middot; this table has already earned its place once: "restart during election" sat at 0% because an instrumentation call had landed in the wrong place</p>
+  </section>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">a failure, end to end</div>
+      <h2>From a seed to something a person can read</h2>
+    </div>
+    <div class="prose">
+      <p>The fuzzer reports a seed. The shrinker deletes faults and replays until only what matters
+        is left. Then the run is drawn as a grid: who led, who was cut off, and where the committed
+        log stopped moving.</p>
+    </div>
+    <pre id="timeline">loading…</pre>
+    <div class="prose">
+      <p>One command turns a failure that needed twenty-one injected faults over eight seconds into
+        a reproduction with no faults at all and 627 milliseconds — the bug was there the whole
+        time, hiding behind ordinary message timing. The repro is a JSON file that replays
+        identically on any machine.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">scope</div>
+      <h2>What is in the box, and what is not</h2>
+    </div>
+    <div class="cols">
+      <div class="stack">
+        <h3>Implemented</h3>
+        <ul>
+          <li>Leader election, log replication with fast backup and a per-peer in-flight window</li>
+          <li>The §5.4.2 commit rules, persistence and crash recovery</li>
+          <li>Pre-vote (§9.6) and leader stickiness (§4.2.3)</li>
+          <li>Log compaction with InstallSnapshot (§7) — snapshots carry client sessions too</li>
+          <li>Single-server membership changes (§4.1)</li>
+          <li>All three read paths of §6.4, including the fresh-leader read barrier</li>
+          <li>Client sessions for exactly-once semantics under retries (§6.3)</li>
+          <li>Wing &amp; Gong linearizability search with per-key partitioning</li>
+          <li>Delta-debugging shrinker, JSON repros, parallel seed campaigns</li>
+        </ul>
+      </div>
+      <div class="stack">
+        <h3>Not implemented</h3>
+        <ul>
+          <li>Joint consensus and the §4.2.1 catch-up phase — adding a server can cost a brief dip
+            in availability</li>
+          <li>A real RPC stack, disk or operating system: this tests the protocol</li>
+          <li>The linearizability search is exponential in the worst case; on budget exhaustion it
+            reports <code>UNKNOWN</code> rather than claiming a pass</li>
+          <li>The hostile and slow worlds can violate Raft's own timing assumption; the checker
+            reports that as a fact about the world, not about the code</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+  <footer>
+    <div><code class="mono">python3 -m raftlab campaign --seeds 500</code> &nbsp;·&nbsp; <code class="mono">python3 -m raftlab reads --seeds 3000</code> &nbsp;·&nbsp; <code class="mono">make test</code></div>
+    <div>Every number on this page came from those commands. No dependencies; just Python 3.
+      <a href="https://github.com/BurakGGGG/raftlab">Source on GitHub</a>.</div>
+  </footer>
+</div>
+<script>
+  const MATRIX = [["correct (the real code)", null, null, null, null, "—", "no violation in 2,000 runs", true], ["blind_truncate", 100.0, 100.0, 100.0, 100.0, "1", "TruncatedCommitted"], ["apply_before_commit", 100.0, 100.0, 100.0, 100.0, "1", "SnapshotBeyondCommit, StateMachineSafety"], ["commit_index_unclamped", 90.4, 81.2, 70.0, 96.2, "1", "CommitBeyondLog"], ["no_session_dedup", 34.6, 39.0, 23.4, 42.2, "1", "Linearizability — no internal invariant sees it"], ["snapshot_accepts_stale", 35.2, 10.4, 30.2, 21.6, "2", "CommitBeyondLog"], ["accept_stale_terms", 29.6, 49.2, 19.6, 28.6, "1", "CommitBeyondLog, TruncatedCommitted, LeaderAppendOnly"], ["no_log_up_to_date_check", 23.4, 36.8, 20.6, 35.0, "1", "LeaderCompleteness"], ["no_prev_log_check", 19.0, 44.8, 25.2, 22.0, "1", "LogMatching"], ["config_on_commit", 0.0, 0.0, 0.0, 1.0, "2", "ElectionSafety — two leaders in one term"], ["config_concurrent", 0.0, 0.0, 0.0, 1.0, "27", "LeaderCompleteness, StateMachineSafety"], ["no_persist_vote", 0.2, 0.4, 1.0, 0.0, "99", "VoteSafety"], ["snapshot_forgets_sessions", 0.0, 0.2, 0.0, 0.2, "228", "Linearizability"], ["figure8_commit *", 0.0, 0.0, 0.0, 0.0, "1033", "LeaderCompleteness — 11 hits in 5,000 seeds"]];
+  const RECOVERY = [["hostile / no pre-vote", 1000, 227, 942, 2266, 3580, 8.4], ["hostile / pre-vote", 1000, 52, 311, 592, 688, 0.0], ["hostile / pre-vote + sticky", 1000, 56, 334, 564, 822, 0.0], ["slow / no pre-vote", 1000, 439, 1195, 2641, 8647, 14.5], ["slow / pre-vote", 1000, 230, 618, 1173, 1631, 1.5], ["slow / pre-vote + sticky", 1000, 243, 644, 1158, 1486, 1.4]];
+  const READS = [["through the log", "3,000", 0, 71, 2616, 115, "every read is replicated like a write"], ["ReadIndex", "3,000", 0, 77, 2923, 80, "one heartbeat round; 30% smaller log"], ["leader lease", "3,000", 4, 30, 2372, 89, "fastest — and stale once a clock stops"], ["leader lease, sound clocks", "3,000", 0, 29, 2463, 89, "same code, <code>--freeze 0.0</code>: clean"]];
+  const COVERAGE = [["client retried more than once", 1600, 100.0], ["an operation took over a second", 1599, 99.9], ["a snapshot was taken", 1599, 99.9], ["leadership changed hands", 1581, 98.8], ["the leader crashed", 1481, 92.6], ["a node restarted during an election", 1445, 90.3], ["the leader was cut into a minority", 1337, 83.6], ["a node crashed during an election", 1266, 79.1], ["a follower caught up via InstallSnapshot", 1228, 76.8], ["the leader was paused", 1097, 68.6], ["a clock was frozen", 993, 62.1], ["a log was truncated", 960, 60.0], ["two nodes believed they led", 898, 56.1], ["a stale leader inside a partition", 762, 47.6], ["the configuration changed", 396, 24.8]];
+  const FINDINGS = [["Unbounded retransmission amplification", "183,560 messages to replicate 209 entries; some runs allocated hundreds of megabytes", "one batch in flight per peer (etcd's <code>Progress.Inflights</code>) &rarr; 3,579 messages; campaign throughput 524&times; &rarr; 955&times;"], ["Reads answered from a stale commit index", "2.2% of ReadIndex runs returned stale data", "the §6.4 barrier: a leader may not answer a read before committing an entry of its own term &rarr; 0 in 6,000 runs"], ["Read starvation under load", "a perfectly healthy cluster, with 21 reads waiting forever", "track acknowledgements per round instead of one current round &rarr; no stalls, and 15% lower read latency"], ["A new member never replicated to", "1% of runs in the churn world wedged permanently", "§4.1: initialise replication state the moment the configuration adds a server &rarr; 0 in 400 runs"], ["Slow recovery without pre-vote", "8.4% of runs served nothing for over a second after the network healed", "pre-vote (§9.6) &rarr; median 227ms &rarr; 52ms, worst 3,580ms &rarr; 688ms"]];
+  const STATS = {"s-runs": "82,600", "s-events": "825M", "s-hours": "184 h", "s-speed": "~700×"};
+  const TIMELINE = "timeline  seed=3  104ms per column  (10000ms total)\n\n  node 0 |..LLLLLLLxxxxxxxxxxxxxxxxxxxxxxxxxxxxx..cc...cLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL|\n  node 1 |............cLxxxxxxxxxxxxxxxxxxxxxxxxxx..cL~xxxxxxxxxxxxxxxxxxxxxxxxx..........................|\n  node 2 |............c...ccccccccccccccccccccccccccc.....................................................|\n  node 3 |                                                                                                |\n  node 4 |                                                                                                |\n  commit |        ...........................................:::::::::::------=====++++*******#######%%%%@|  0..253\n         |0         1         2        3         4         5        6         7        8         9        |  seconds\n\n  L leader   c candidate   . follower   x crashed   ~ paused   (blank) outside the configuration";
+
+  for (const [id, value] of Object.entries(STATS)) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+  document.getElementById("timeline").textContent = TIMELINE;
+
+  const cell = v => {
+    if (v === null) return '<td class="num rate-0">temiz</td>';
+    const cls = v >= 50 ? "rate-hi" : v === 0 ? "rate-0" : "";
+    return `<td class="num ${cls}">${v.toFixed(1)}%</td>`;
+  };
+  document.getElementById("matrix").innerHTML = MATRIX.map(r =>
+    `<tr class="${r[7] ? "clean" : ""}"><td>${r[0]}</td>${cell(r[1])}${cell(r[2])}${cell(r[3])}${cell(r[4])}` +
+    `<td class="num">${r[5]}</td><td class="det">${r[6]}</td></tr>`).join("");
+
+  document.getElementById("recovery").innerHTML = RECOVERY.map(r =>
+    `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}ms</td>` +
+    `<td class="num">${r[3]}ms</td><td class="num">${r[4]}ms</td>` +
+    `<td class="num ${r[5] > 2000 ? "rate-hi" : ""}">${r[5]}ms</td>` +
+    `<td class="num ${r[6] > 0 ? "rate-hi" : "rate-0"}">${r[6].toFixed(1)}%</td></tr>`).join("");
+
+  document.getElementById("reads").innerHTML = READS.map(r =>
+    `<tr><td>${r[0]}</td><td class="num">${r[1]}</td>` +
+    `<td class="num ${r[2] > 0 ? "rate-hi" : "rate-0"}">${r[2]}</td>` +
+    `<td class="num">${r[3]}ms</td><td class="num">${r[4]}ms</td><td class="num">${r[5]}</td>` +
+    `<td class="det">${r[6]}</td></tr>`).join("");
+
+  const covTop = COVERAGE[0][1];
+  document.getElementById("coverage").innerHTML = COVERAGE.map(r => {
+    const pct = r[2];
+    const w = Math.round(pct);
+    return `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${pct.toFixed(1)}%</td>` +
+      `<td class="det"><span style="display:inline-block;height:8px;width:${w * 1.8}px;` +
+      `background:var(--signal);opacity:.75;border-radius:1px"></span></td></tr>`;
+  }).join("");
+
+  document.getElementById("findings").innerHTML = FINDINGS.map(r =>
+    `<tr><td>${r[0]}</td><td class="det">${r[1]}</td><td class="det">${r[2]}</td></tr>`).join("");
+</script>

@@ -1,0 +1,552 @@
+<title>raftlab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap">
+<style>
+  :root {
+    --ground: #e9edee;
+    --surface: #ffffff;
+    --sunk: #f3f6f6;
+    --ink: #131a1c;
+    --muted: #5b696d;
+    --faint: #8a979b;
+    --rule: #d0d9da;
+    --rule-strong: #b3c0c2;
+    --signal: #0c6a62;
+    --alarm: #a33a20;
+    --ok: #2c6a45;
+    --shadow: 0 1px 2px rgba(19, 26, 28, .07);
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --serif: "IBM Plex Serif", Georgia, serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  :root:not([data-theme="light"]) {
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0c1012;
+      --surface: #141b1d;
+      --sunk: #101718;
+      --ink: #dfe6e6;
+      --muted: #93a1a4;
+      --faint: #6d7c80;
+      --rule: #242f31;
+      --rule-strong: #37474a;
+      --signal: #46cdbb;
+      --alarm: #e58466;
+      --ok: #74cd94;
+      --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0c1012;
+    --surface: #141b1d;
+    --sunk: #101718;
+    --ink: #dfe6e6;
+    --muted: #93a1a4;
+    --faint: #6d7c80;
+    --rule: #242f31;
+    --rule-strong: #37474a;
+    --signal: #46cdbb;
+    --alarm: #e58466;
+    --ok: #74cd94;
+    --shadow: none;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 16.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 20px;
+    padding-block: 56px 72px;
+    display: flex;
+    flex-direction: column;
+    gap: 54px;
+  }
+  .prose { max-width: 68ch; display: flex; flex-direction: column; gap: 16px; }
+  p { margin: 0; }
+  a { color: var(--signal); text-underline-offset: 2px; }
+  h1, h2, h3 { font-family: var(--sans); margin: 0; text-wrap: balance; }
+  h1 { font-size: 2.6rem; font-weight: 600; letter-spacing: -.03em; line-height: 1.05; }
+  h2 { font-size: 1.34rem; font-weight: 600; letter-spacing: -.01em; }
+  h3 { font-size: 1.02rem; font-weight: 600; }
+  .eyebrow {
+    font-family: var(--mono); font-size: .7rem; font-weight: 500;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--faint);
+  }
+  code, .mono { font-family: var(--mono); }
+  p code, li code, td code {
+    font-size: .86em; background: var(--sunk); padding: .1em .34em;
+    border-radius: 3px; border: 1px solid var(--rule);
+  }
+
+  /* ---------- masthead ---------- */
+  header { display: flex; flex-direction: column; gap: 20px; }
+  .lede { font-size: 1.18rem; color: var(--muted); max-width: 62ch; }
+  .lede strong { color: var(--ink); font-weight: 500; }
+  .rule { height: 1px; background: var(--rule); }
+
+  .figures { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+  .fig { background: var(--surface); padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
+  .fig .n { font-family: var(--mono); font-size: 1.42rem; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .fig .k { font-family: var(--sans); font-size: .74rem; color: var(--muted); letter-spacing: .02em; }
+
+  /* ---------- sections ---------- */
+  section { display: flex; flex-direction: column; gap: 20px; }
+  .head { display: flex; flex-direction: column; gap: 4px; }
+
+  /* ---------- tables ---------- */
+  .scroll { overflow-x: auto; border: 1px solid var(--rule); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-family: var(--mono); font-size: .8rem; }
+  th, td { text-align: right; padding: 7px 12px; white-space: nowrap; border-bottom: 1px solid var(--rule); }
+  th:first-child, td:first-child { text-align: left; }
+  thead th {
+    font-family: var(--sans); font-size: .7rem; font-weight: 600; color: var(--muted);
+    letter-spacing: .04em; text-transform: uppercase; border-bottom: 1px solid var(--rule-strong);
+    position: sticky; top: 0; background: var(--surface);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { font-variant-numeric: tabular-nums; }
+  tr.clean td:first-child { color: var(--ok); }
+  .det { color: var(--muted); text-align: left !important; font-size: .76rem; }
+  .rate-0 { color: var(--faint); }
+  .rate-hi { color: var(--alarm); font-weight: 600; }
+
+  /* ---------- callouts ---------- */
+  .findings { display: flex; flex-direction: column; gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+  .finding { background: var(--surface); padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; }
+  .finding .tag { font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--signal); }
+  .finding p { font-size: .95rem; max-width: 74ch; }
+
+  pre {
+    margin: 0; background: var(--sunk); border: 1px solid var(--rule);
+    padding: 14px 16px; overflow-x: auto; font-family: var(--mono);
+    font-size: .78rem; line-height: 1.62; color: var(--ink);
+  }
+  pre .c { color: var(--faint); }
+  pre .a { color: var(--alarm); }
+  pre .g { color: var(--ok); }
+
+  ul { margin: 0; padding-left: 1.15em; display: flex; flex-direction: column; gap: 7px; }
+  li::marker { color: var(--faint); }
+
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 22px; }
+  .stack { display: flex; flex-direction: column; gap: 10px; }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; font-size: .9rem; }
+  .kv dt { font-family: var(--mono); font-size: .78rem; color: var(--signal); }
+  .kv dd { margin: 0; color: var(--muted); }
+
+  figure { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  figcaption { font-family: var(--sans); font-size: .78rem; color: var(--muted); }
+  svg { display: block; max-width: 100%; height: auto; }
+
+  footer { font-family: var(--sans); font-size: .8rem; color: var(--faint); display: flex; flex-direction: column; gap: 6px; }
+
+  @media (max-width: 620px) {
+    .figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    h1 { font-size: 2.1rem; }
+    .wrap { gap: 42px; padding-block: 40px 56px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">deterministik simülasyon testi</div>
+    <h1>raftlab</h1>
+    <p class="lede">Sıfırdan yazılmış bir Raft konsensüs implementasyonu ve onu gerçekten hesap
+      vermeye zorlayan simülatör: <strong>tek bir tohum, bir kümenin tüm ömrünü yeniden üretir</strong>
+      — bölünmeler, çökmeler, GC duraklamaları, saat kayması, paket kaybı — her olaydan sonra on
+      güvenlik değişmezi ve her istemci geçmişi için linearizability denetimiyle.</p>
+    <div class="figures">
+      <div class="fig"><span class="n" id="s-runs">—</span><span class="k">simüle edilmiş küme</span></div>
+      <div class="fig"><span class="n" id="s-events">—</span><span class="k">denetlenen olay</span></div>
+      <div class="fig"><span class="n" id="s-hours">—</span><span class="k">küme yaşamı</span></div>
+      <div class="fig"><span class="n" id="s-speed">—</span><span class="k">gerçek zamana oran</span></div>
+    </div>
+    <p class="eyebrow">saf Python &middot; sıfır bağımlılık &middot; 56 test &middot; 13 enjekte edilebilir hata
+      &middot; <a href="https://github.com/BurakGGGG/raftlab">kaynak kod</a>
+      &middot; <a href="index.html">english</a></p>
+  </header>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">sorun</div>
+      <h2>Konsensüs hataları siz bakarken ortaya çıkmaz</h2>
+    </div>
+    <div class="prose">
+      <p>Bir replikasyon log'unda önemli olan arızalar, bölünmenin <em>tam olarak iki belirli mesaj
+        arasında</em> açılmasını, ya da bir liderin girdiyi ekledikten sonra onu kopyalayamadan
+        ölmesini ister. Gerçek bir kümeyi çalıştırıp şansa güvenmek bunları bulmaz; nadiren
+        bulduğunda da gördüğünüzü yeniden üretemezsiniz.</p>
+      <p>Bu yüzden dünyanın kendisi deterministik hale getirilir: tek thread, sanal saat, tohumlanmış
+        tek bir rastgelelik akışı — FoundationDB, TigerBeetle ve Antithesis'in kurulduğu yaklaşım.
+        Böylece başarısız bir koşu bir hikâye olmaktan çıkıp yeniden oynatabileceğiniz, küçültüp test
+        paketine koyabileceğiniz bir <em>sayı</em> haline gelir.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">mimari</div>
+      <h2>Tek tohum, dört aşama</h2>
+    </div>
+    <figure>
+      <svg viewBox="0 0 980 250" role="img" aria-label="Boru hattı: tohumdan dünya türetilir, olay döngüsü beş Raft düğümünü sürer, denetçi her olayı sınar, hatalar minimum arıza takvimine küçültülür.">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--rule-strong)"></path>
+          </marker>
+        </defs>
+        <g font-family="IBM Plex Mono, monospace" font-size="12">
+          <rect x="6" y="72" width="112" height="60" rx="3" fill="var(--surface)" stroke="var(--signal)" stroke-width="1.5"></rect>
+          <text x="62" y="97" text-anchor="middle" fill="var(--signal)" font-size="13" font-weight="600">tohum = 4242</text>
+          <text x="62" y="115" text-anchor="middle" fill="var(--muted)" font-size="10.5">tüm girdi bu</text>
+
+          <rect x="158" y="30" width="196" height="144" rx="3" fill="var(--surface)" stroke="var(--rule-strong)"></rect>
+          <text x="172" y="52" fill="var(--ink)" font-size="12" font-weight="600">1 &nbsp;dünya</text>
+          <text x="172" y="76" fill="var(--muted)" font-size="10.5">gecikme &middot; kayıp &middot; kopyalanma</text>
+          <text x="172" y="94" fill="var(--muted)" font-size="10.5">bölünme &middot; çökme &middot; duraklama</text>
+          <text x="172" y="112" fill="var(--muted)" font-size="10.5">saat kayması ve donması</text>
+          <text x="172" y="130" fill="var(--muted)" font-size="10.5">üyelik değişimi &middot; istemci yükü</text>
+          <text x="172" y="154" fill="var(--faint)" font-size="10">her altsistem için ayrı RNG</text>
+
+          <rect x="394" y="30" width="196" height="144" rx="3" fill="var(--surface)" stroke="var(--rule-strong)"></rect>
+          <text x="408" y="52" fill="var(--ink)" font-size="12" font-weight="600">2 &nbsp;küme</text>
+          <g fill="var(--sunk)" stroke="var(--rule-strong)">
+            <rect x="410" y="70" width="30" height="30" rx="2"></rect>
+            <rect x="446" y="70" width="30" height="30" rx="2"></rect>
+            <rect x="482" y="70" width="30" height="30" rx="2"></rect>
+            <rect x="518" y="70" width="30" height="30" rx="2"></rect>
+            <rect x="554" y="70" width="30" height="30" rx="2"></rect>
+          </g>
+          <g fill="var(--muted)" font-size="10" text-anchor="middle">
+            <text x="425" y="89">n0</text><text x="461" y="89">n1</text><text x="497" y="89">n2</text>
+            <text x="533" y="89">n3</text><text x="569" y="89">n4</text>
+          </g>
+          <text x="408" y="126" fill="var(--muted)" font-size="10.5">saf durum makineleri: saat yok,</text>
+          <text x="408" y="142" fill="var(--muted)" font-size="10.5">soket yok, thread yok</text>
+          <text x="408" y="162" fill="var(--faint)" font-size="10">step(now, msg) &rarr; [msg]</text>
+
+          <rect x="630" y="30" width="196" height="144" rx="3" fill="var(--surface)" stroke="var(--rule-strong)"></rect>
+          <text x="644" y="52" fill="var(--ink)" font-size="12" font-weight="600">3 &nbsp;denetçi</text>
+          <text x="644" y="76" fill="var(--muted)" font-size="10.5">10 değişmez, her olayda</text>
+          <text x="644" y="94" fill="var(--muted)" font-size="10.5">geçmişin linearizability'si</text>
+          <text x="644" y="112" fill="var(--muted)" font-size="10.5">iyileşme sonrası canlılık</text>
+          <text x="644" y="140" fill="var(--alarm)" font-size="10.5">&#9679; ihlal &rarr; dur, raporla</text>
+
+          <rect x="862" y="72" width="112" height="60" rx="3" fill="var(--surface)" stroke="var(--signal)" stroke-width="1.5"></rect>
+          <text x="918" y="97" text-anchor="middle" fill="var(--signal)" font-size="13" font-weight="600">repro.json</text>
+          <text x="918" y="115" text-anchor="middle" fill="var(--muted)" font-size="10.5">minimum, oynatılabilir</text>
+
+          <g stroke="var(--rule-strong)" stroke-width="1.4" fill="none" marker-end="url(#ar)">
+            <path d="M120 102 L152 102"></path>
+            <path d="M356 102 L388 102"></path>
+            <path d="M592 102 L624 102"></path>
+            <path d="M828 102 L856 102"></path>
+            <path d="M918 140 L918 205 L200 205 L200 180"></path>
+          </g>
+          <text x="560" y="222" text-anchor="middle" fill="var(--faint)" font-size="10.5">4 &nbsp;küçült: bir arızayı sil, yeniden oynat, hâlâ başarısızsa silmeyi koru</text>
+        </g>
+      </svg>
+      <figcaption>Her ok, tek bir süreçteki bir fonksiyon çağrısıdır. Hiçbir şey duvar saatini
+        beklemez: sekiz saniyelik küme yaşamı yaklaşık elli milisaniyeye mal olur.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">kampanya &middot; hücre başına 500 tohum</div>
+      <h2>On üç kasıtlı hata ve altyapının onları yakalayıp yakalamadığı</h2>
+    </div>
+    <div class="prose">
+      <p>Hiçbir şey yakalamamış bir test altyapısı, sınanmamış bir iddiadır. Aşağıdaki her satır,
+        aynı implementasyonun tek bir kasıtlı protokol hatasıyla derlenmiş halidir — hepsi gerçek bir
+        Raft'ta görülmüş hatalar — dört farklı dünyada koşturulmuştur. En üstteki satır gerçek
+        koddur. Oranlar, hatanın yakalandığı tohumların payıdır.</p>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>implementasyon</th><th>normal</th><th>hostile</th><th>slow</th><th>churn</th>
+            <th>ilk tohum</th><th class="det">yakalayan denetim</th></tr>
+        </thead>
+        <tbody id="matrix"></tbody>
+      </table>
+    </div>
+    <p class="eyebrow">* figure8_commit, seçimde no-op girdisi olmadan koşturulur: o no-op hatayı maskeler &middot; üyelik hataları yalnızca churn dünyasında görünür, çünkü yalnızca orada yapılandırma değişir</p>
+  </section>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">altyapının bulduğu şeyler</div>
+      <h2>Kendi kodumdaki beş gerçek hata</h2>
+    </div>
+    <div class="prose">
+      <p>Bunların hiçbiri planlanmış değildi. Hepsi, doğru olduğuna inandığım implementasyonun
+        binlerce tohumda koşturulmasıyla ortaya çıktı — ve her biri düzeltilip <em>ölçüldü</em>.</p>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>bulgu</th><th class="det">belirti</th><th class="det">çözüm ve ölçüm</th></tr></thead>
+        <tbody id="findings"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">bulgu 01 &middot; canlılık</div>
+      <h2>Kitaptaki Raft yavaş toparlanıyor — ve ilk ölçümüm bunu abartmıştı</h2>
+    </div>
+    <div class="cols">
+      <div class="stack">
+        <p>Binlerce tohumda tüm güvenlik değişmezleri tuttu. Sonra canlılık denetimi konuşmaya
+          başladı: koşuların küçük bir kısmında küme, ağ iyileştikten sonra bir daha hiçbir istemci
+          isteğine cevap vermedi. İz, mekanizmayı açıkça gösteriyor — iki düğüm sırayla birbirini
+          tahtından ediyor; her seçim daha yüksek bir terim taşır ve daha yüksek terim, çalışan bir
+          lideri çekilmeye zorlar.</p>
+        <p>Burada bir kodlama hatası yok; bu, <em>makalede tarif edilen algoritmanın kendisi</em> —
+          ve Raft tezinin <strong>pre-vote</strong> (§9.6) ile <strong>lider yapışkanlığını</strong>
+          (§4.2.3) eklemesinin sebebi tam olarak budur. İmplemente edildi ve varsayılmak yerine
+          ölçüldü:</p>
+      </div>
+      <pre><span class="c">t=6730</span>  node 2: aday    <span class="g">-&gt; LİDER</span>    terim 21
+<span class="c">t=6757</span>  node 0: takipçi -&gt; aday     terim 22
+<span class="c">t=6770</span>  node 2: lider   <span class="a">-&gt; takipçi</span>  terim 22
+<span class="c">t=6907</span>  node 0: aday    <span class="g">-&gt; LİDER</span>    terim 22
+<span class="c">t=6937</span>  node 2: takipçi -&gt; aday     terim 23
+<span class="c">t=6952</span>  node 0: lider   <span class="a">-&gt; takipçi</span>  terim 23
+       <span class="c">... terimler tırmanır, hiçbir şey commit olmaz</span></pre>
+    </div>
+    <div class="prose">
+      <p><strong>Ama ilk ölçümüm yanlıştı ve bunu da altyapı yakaladı.</strong> "Seçtiğim pencerede
+        hiçbir işlem tamamlanmadı", "küme çökmüş" ile aynı şey değil: ağır ayrışmış bir log'u
+        onaran küme, bir seçimden uzun sürebilir. Artık canlılık denetimi kendini <em>doğruluyor</em>:
+        tıkanmış görünen koşu, kuyruğu iki katına çıkarılarak yeniden oynatılıyor ve yalnızca hâlâ
+        sessiz olan küme raporlanıyor. Bu doğrulamayla birlikte pre-vote'lu ya da pre-vote'suz her
+        sürüm eninde sonunda toparlanıyor — hiçbiri kalıcı olarak ölmemişti.</p>
+      <p>Gerçek etki ikili bir cevap değil, bir dağılım — ve yerini aldığı iddiadan daha değerli:</p>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>sürüm</th><th>koşu</th><th>medyan</th><th>p90</th><th>p99</th><th>en kötü</th><th>1 sn üstü</th></tr></thead>
+        <tbody id="recovery"></tbody>
+      </table>
+    </div>
+    <p class="eyebrow">son arıza iyileştikten sonra kümenin bir sonraki isteği cevaplaması için geçen süre &middot; hücre başına 1.000 tohum &middot; hiçbir sürümde "hiç toparlanmadı" vakası yok</p>
+    <div class="prose">
+      <p>Pre-vote, kümeyi zaten yaşanmayacak bir kesintiden kurtarmıyor. Yaptığı şey, toparlanma
+        medyanını birkaç kat düşürmek ve çok saniyelik kuyruğu tamamen ortadan kaldırmak — yani bir
+        kesinti ile bir gecikme arasındaki fark.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">bulgu 02 &middot; denetçi</div>
+      <h2>İki hata görünmezdi ve suçlu arıza enjektörü değildi</h2>
+    </div>
+    <div class="findings">
+      <div class="finding">
+        <span class="tag">commit_index_unclamped &middot; 6.000'de 0 &rarr; 10'da 9</span>
+        <h3>Sonucu değil, nedeni denetle</h3>
+        <p>Liderin commit indeksini olduğu gibi benimseyen bir takipçinin, er geç geri alınacak bir
+          girdiyi uygulaması gerekirdi. Hiç olmadı: çakışan bir ekleme log'u sonuna kadar buduyor,
+          dolayısıyla ayrışan kuyruk uygulanacak kadar yaşamıyor — doğru bir mekanizma, başka bir
+          mekanizmanın hatasını maskeliyor. Oysa <em>neden</em> tek bir karşılaştırma:
+          <code>commitIndex &gt; lastLogIndex</code> doğru Raft'ta imkânsızdır. Bunu denetlemek,
+          tespiti altı bin koşuda sıfırdan on koşuda dokuza taşıdı.</p>
+      </div>
+      <div class="finding">
+        <span class="tag">no_persist_vote &middot; iki lider gerekiyordu &rarr; tek çifte oy yeter</span>
+        <h3>Oy, kalıcı bir sözdür</h3>
+        <p>Yeniden başlatmada oyunu unutan bir düğüm aynı terimde iki kez oy verebilir. Ders
+          kitabındaki sonucu beklemek, <em>her iki</em> adayın da çoğunluk toplamasını beklemek
+          demektir — tesadüf üstüne tesadüf. Çifte oyun kendisini izlemek, aynı ölçüde sağlam bir
+          değişmezdir ve hatayı yüzlerce tohum daha erken bulur.</p>
+      </div>
+      <div class="finding">
+        <span class="tag">çıkarım</span>
+        <h3>Denetçinin duyarlılığı, enjektörün erişiminden fazlasını kazandırır</h3>
+        <p>Bir hata fuzz kampanyasından sağ çıktığında insanın içinden daha sert arıza enjekte etmek
+          gelir. İlişkili arıza patlamaları ve lider hedefli kaos, buradaki en zor hatada kabaca 4×
+          iyileşme getirdi. İki yeni değişmez — ucuz, sağlam, dörder satır — birkaç büyüklük
+          mertebesi getirdi.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">kontrollü deney &middot; §6.4</div>
+      <h2>Bir okumayı cevaplamanın üç yolu, ve saati duran bir makine</h2>
+    </div>
+    <div class="prose">
+      <p>Aynı tohumlar, aynı arızalar, aynı dünya — değişen tek şey okuma yolu. Log üzerinden okuma
+        her okumayı bir yazma gibi replike eder. <strong>ReadIndex</strong>, lider olduğunu tek bir
+        heartbeat turuyla doğrular ve kendi durum makinesinden cevaplar. <strong>Lider kirası</strong>
+        ise hiçbir şey sormadan, kirasının hâlâ geçerli olduğuna inandığı sürece cevaplar.</p>
+      <p>Kira, saatlerin sınırlı hata payıyla çalıştığını varsayar. Simülatörün arıza modelinde bir
+        duraklama <em>saati de durdurabilir</em> — askıya alınmış bir sanal makine budur. Uyandığında
+        eski lider, aradan neredeyse hiç zaman geçmediğine inanır ve kirasını hâlâ geçerli sayar:</p>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>okuma yolu</th><th>tohum</th><th>bayat okuma</th><th>p50</th><th>p99</th><th>log/koşu</th><th class="det">not</th></tr></thead>
+        <tbody id="reads"></tbody>
+      </table>
+    </div>
+    <div class="cols">
+      <pre><span class="c">t=1467</span>  node 0 LİDER olur              terim 2
+<span class="c">t=1918</span>  <span class="a">node 0 DURAKLAR — saati de durur</span>
+<span class="c">t=2415</span>  node 4 LİDER olur              terim 4
+<span class="c">t=2894</span>  node 0 uyanır; kendi saatine göre
+       neredeyse hiç zaman geçmemiştir,
+       <span class="a">kirası hâlâ geçerli görünür</span>
+<span class="c">t=3581</span>  node 0 nihayet tahttan indiğini öğrenir</pre>
+      <div class="stack">
+        <p>Bu pencerede lider, artık geçerli olmayan yerel durumundan okuma servis eder. Hiçbir iç
+          Raft değişmezi bunu göremez — log kusursuz biçimde replike edilmiştir. Yalnızca uçtan uca
+          linearizability denetçisi yakalar.</p>
+        <p>Saat donması kapatıldığında (<code>--freeze 0.0</code>) kira okumaları <em>bütün</em>
+          koşularda temiz geçer. Yani bu, kirayı çürüten bir kanıt değil; kiranın hangi varsayıma
+          dayandığının ve o varsayım düştüğünde ne olduğunun ölçümüdür.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">keşif kalitesi</div>
+      <h2>Fuzzer gerçekte neye ulaşıyor?</h2>
+    </div>
+    <div class="prose">
+      <p>Bir kampanya, hiç snapshot kurulumu üretmediyse InstallSnapshot'ı test etmemiştir — kaç
+        tohum harcadığı fark etmez. Bu yüzden her koşu, ulaştığı ilginç durumları işaretler:</p>
+    </div>
+    <div class="scroll"><table>
+      <thead><tr><th>ulaşılan durum</th><th>koşu</th><th>pay</th><th class="det"></th></tr></thead>
+      <tbody id="coverage"></tbody>
+    </table></div>
+    <p class="eyebrow">dört dünyada 1.600 koşu &middot; bu tablo bir kez gerçek bir boşluk gösterdi: "seçim sırasında yeniden başlatma" hiç tetiklenmiyordu, çünkü o ölçüm noktası yanlış yere konmuştu</p>
+  </section>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">uçtan uca bir hata</div>
+      <h2>Bir tohumdan, insanın okuyabileceği bir şeye</h2>
+    </div>
+    <div class="prose">
+      <p>Fuzzer bir tohum bildirir. Küçültücü, yalnızca gerçekten önemli olan arızalar kalana dek
+        arıza silip yeniden oynatır. Sonra koşu bir ızgara olarak çizilir: kim liderdi, kim kesildi,
+        commit nerede durdu.</p>
+    </div>
+    <pre id="timeline">yükleniyor…</pre>
+    <div class="prose">
+      <p>Eski lider izole edilir; node 2 bir sonraki terimi kazanır ve ilk işi kendi no-op girdisini
+        eski liderin <em>zaten uyguladığı</em> indekse yazmaktır. İki durum makinesi, aynı indekste
+        iki farklı komut. Repro, her makinede aynı şekilde oynayan bir JSON dosyasıdır.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <div class="eyebrow">kapsam</div>
+      <h2>Kutuda ne var, ne yok</h2>
+    </div>
+    <div class="cols">
+      <div class="stack">
+        <h3>İmplemente edildi</h3>
+        <ul>
+          <li>Lider seçimi, hızlı geri-sarma ve peer başına uçuş penceresiyle log replikasyonu</li>
+          <li>§5.4.2 commit kuralları, kalıcılık ve çökme kurtarma</li>
+          <li>Pre-vote (§9.6) ve lider yapışkanlığı (§4.2.3)</li>
+          <li>InstallSnapshot ile log sıkıştırma (§7) — anlık görüntü oturumları da taşır</li>
+          <li>Tek sunuculuk üyelik değişiklikleri (§4.1)</li>
+          <li>§6.4'ün üç okuma yolu ve taze liderin okuma bariyeri</li>
+          <li>Yeniden denemeler altında tam-bir-kez istemci oturumları (§6.3)</li>
+          <li>Wing &amp; Gong linearizability araması, anahtar bazlı bölümlemeyle</li>
+          <li>Delta-debugging küçültücü, JSON repro'lar, paralel tohum kampanyaları</li>
+        </ul>
+      </div>
+      <div class="stack">
+        <h3>İmplemente edilmedi</h3>
+        <ul>
+          <li>Birleşik konsensüs (joint consensus) ve §4.2.1'deki yakalama aşaması — yeni sunucu
+            eklenirken kısa bir erişilebilirlik düşüşü olabilir</li>
+          <li>Gerçek bir RPC yığını, disk veya işletim sistemi: bu, protokolü test eder</li>
+          <li>Linearizability araması en kötü durumda üsteldir; bütçe dolunca "geçti" demek yerine
+            <code>UNKNOWN</code> bildirir</li>
+          <li>hostile ve slow dünyaları Raft'ın kendi zamanlama varsayımını ihlal edebilir; denetçi
+            bunu kod hakkında değil, o dünya hakkında bir ifade olarak raporlar</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+  <footer>
+    <div><code class="mono">python3 -m raftlab campaign --seeds 500</code> &nbsp;·&nbsp; <code class="mono">python3 -m raftlab reads --seeds 3000</code> &nbsp;·&nbsp; <code class="mono">make test</code></div>
+    <div>Bu sayfadaki her sayı yukarıdaki komutlardan çıktı. Bağımlılık yok; yalnızca Python 3.</div>
+  </footer>
+</div>
+
+<script>
+  const MATRIX = [["correct (gerçek kod)", null, null, null, null, "—", "2.000 koşuda tek ihlal yok", true], ["blind_truncate", 100.0, 100.0, 100.0, 100.0, "1", "TruncatedCommitted"], ["apply_before_commit", 100.0, 100.0, 100.0, 100.0, "1", "SnapshotBeyondCommit, StateMachineSafety"], ["commit_index_unclamped", 90.4, 81.2, 70.0, 96.2, "1", "CommitBeyondLog"], ["no_session_dedup", 34.6, 39.0, 23.4, 42.2, "1", "Linearizability — hiçbir iç değişmez göremez"], ["snapshot_accepts_stale", 35.2, 10.4, 30.2, 21.6, "2", "CommitBeyondLog"], ["accept_stale_terms", 29.6, 49.2, 19.6, 28.6, "1", "CommitBeyondLog, TruncatedCommitted, LeaderAppendOnly"], ["no_log_up_to_date_check", 23.4, 36.8, 20.6, 35.0, "1", "LeaderCompleteness"], ["no_prev_log_check", 19.0, 44.8, 25.2, 22.0, "1", "LogMatching"], ["config_on_commit", 0.0, 0.0, 0.0, 1.0, "2", "ElectionSafety — aynı terimde iki lider"], ["config_concurrent", 0.0, 0.0, 0.0, 1.0, "27", "LeaderCompleteness, StateMachineSafety"], ["no_persist_vote", 0.2, 0.4, 1.0, 0.0, "99", "VoteSafety"], ["snapshot_forgets_sessions", 0.0, 0.2, 0.0, 0.2, "228", "Linearizability"], ["figure8_commit *", 0.0, 0.0, 0.0, 0.0, "1033", "LeaderCompleteness — 5.000 tohumda 11 kez"]];
+  const RECOVERY = [["hostile / pre-vote yok", 1000, 227, 942, 2266, 3580, 8.4], ["hostile / pre-vote", 1000, 52, 311, 592, 688, 0.0], ["hostile / pre-vote + yapışkan", 1000, 56, 334, 564, 822, 0.0], ["slow / pre-vote yok", 1000, 439, 1195, 2641, 8647, 14.5], ["slow / pre-vote", 1000, 230, 618, 1173, 1631, 1.5], ["slow / pre-vote + yapışkan", 1000, 243, 644, 1158, 1486, 1.4]];
+  const READS = [["log üzerinden", "3.000", 0, 71, 2616, 115, "her okuma bir yazma gibi replike edilir"], ["ReadIndex", "3.000", 0, 77, 2923, 80, "tek heartbeat turu; log %30 daha küçük"], ["lider kirası", "3.000", 4, 30, 2372, 89, "en hızlısı — ve saat durunca bayat okuma"], ["lider kirası, saat sağlam", "3.000", 0, 29, 2463, 89, "aynı kod, <code>--freeze 0.0</code>: temiz"]];
+  const COVERAGE = [["istemci birden fazla kez yeniden denedi", 1600, 100.0], ["bir işlem 1 saniyeden uzun sürdü", 1599, 99.9], ["anlık görüntü alındı", 1599, 99.9], ["liderlik el değiştirdi", 1581, 98.8], ["lider çöktü", 1481, 92.6], ["seçim sırasında yeniden başlatma", 1445, 90.3], ["lider azınlığa düşürüldü", 1337, 83.6], ["seçim sırasında çökme", 1266, 79.1], ["InstallSnapshot ile yakalama", 1228, 76.8], ["lider duraklatıldı", 1097, 68.6], ["saat donduruldu", 993, 62.1], ["log budandı", 960, 60.0], ["iki düğüm kendini lider sanıyor", 898, 56.1], ["bölünmede bayat lider", 762, 47.6], ["yapılandırma değişti", 396, 24.8]];
+  const FINDINGS = [["Sınırsız yeniden iletim çoğalması", "209 girdiyi replike etmek için 183.560 mesaj; bazı koşular yüzlerce MB ayırdı", "peer başına tek uçuş penceresi (etcd'nin <code>Progress.Inflights</code>'ı) &rarr; 3.579 mesaj; kampanya hızı 524&times; &rarr; 955&times;"], ["Bayat commit indeksinden okuma", "ReadIndex koşularının %2,2'si bayat okuma servis etti", "§6.4 bariyeri: lider kendi teriminden bir girdi commit etmeden okuma cevaplayamaz &rarr; 6.000 koşuda 0"], ["Yük altında okuma açlığı", "küme kusursuz sağlıklı, lider 21 okumayı sonsuza dek bekletiyor", "onaylar tur başına ayrı takip edilir &rarr; tıkanma yok, okuma gecikmesi ayrıca %15 düştü"], ["Yeni üyeye replikasyon durumu açılmıyor", "churn dünyasında koşuların %1'i kalıcı olarak tıkandı", "§4.1: yapılandırma sunucuyu eklediği an <code>next_index</code> başlatılır &rarr; 400 koşuda 0"], ["Pre-vote'suz yavaş toparlanma", "iyileşmeden sonra koşuların %8,4'ünde bir saniyeden uzun süre hiç hizmet yok", "pre-vote (§9.6) &rarr; medyan 227ms &rarr; 52ms, en kötü 3.580ms &rarr; 688ms"]];
+  const STATS = {"s-runs": "82.600", "s-events": "825M", "s-hours": "184 sa", "s-speed": "~700×"};
+  const TIMELINE = "timeline  seed=3  104ms per column  (10000ms total)\n\n  node 0 |..LLLLLLLxxxxxxxxxxxxxxxxxxxxxxxxxxxxx..cc...cLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL|\n  node 1 |............cLxxxxxxxxxxxxxxxxxxxxxxxxxx..cL~xxxxxxxxxxxxxxxxxxxxxxxxx..........................|\n  node 2 |............c...ccccccccccccccccccccccccccc.....................................................|\n  node 3 |                                                                                                |\n  node 4 |                                                                                                |\n  commit |        ...........................................:::::::::::------=====++++*******#######%%%%@|  0..253\n         |0         1         2        3         4         5        6         7        8         9        |  seconds\n\n  L leader   c candidate   . follower   x crashed   ~ paused   (blank) outside the configuration";
+
+  for (const [id, value] of Object.entries(STATS)) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+  document.getElementById("timeline").textContent = TIMELINE;
+
+  const cell = v => {
+    if (v === null) return '<td class="num rate-0">temiz</td>';
+    const cls = v >= 50 ? "rate-hi" : v === 0 ? "rate-0" : "";
+    return `<td class="num ${cls}">${v.toFixed(1)}%</td>`;
+  };
+  document.getElementById("matrix").innerHTML = MATRIX.map(r =>
+    `<tr class="${r[7] ? "clean" : ""}"><td>${r[0]}</td>${cell(r[1])}${cell(r[2])}${cell(r[3])}${cell(r[4])}` +
+    `<td class="num">${r[5]}</td><td class="det">${r[6]}</td></tr>`).join("");
+
+  document.getElementById("recovery").innerHTML = RECOVERY.map(r =>
+    `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}ms</td>` +
+    `<td class="num">${r[3]}ms</td><td class="num">${r[4]}ms</td>` +
+    `<td class="num ${r[5] > 2000 ? "rate-hi" : ""}">${r[5]}ms</td>` +
+    `<td class="num ${r[6] > 0 ? "rate-hi" : "rate-0"}">${r[6].toFixed(1)}%</td></tr>`).join("");
+
+  document.getElementById("reads").innerHTML = READS.map(r =>
+    `<tr><td>${r[0]}</td><td class="num">${r[1]}</td>` +
+    `<td class="num ${r[2] > 0 ? "rate-hi" : "rate-0"}">${r[2]}</td>` +
+    `<td class="num">${r[3]}ms</td><td class="num">${r[4]}ms</td><td class="num">${r[5]}</td>` +
+    `<td class="det">${r[6]}</td></tr>`).join("");
+
+  const covTop = COVERAGE[0][1];
+  document.getElementById("coverage").innerHTML = COVERAGE.map(r => {
+    const pct = r[2];
+    const w = Math.round(pct);
+    return `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${pct.toFixed(1)}%</td>` +
+      `<td class="det"><span style="display:inline-block;height:8px;width:${w * 1.8}px;` +
+      `background:var(--signal);opacity:.75;border-radius:1px"></span></td></tr>`;
+  }).join("");
+
+  document.getElementById("findings").innerHTML = FINDINGS.map(r =>
+    `<tr><td>${r[0]}</td><td class="det">${r[1]}</td><td class="det">${r[2]}</td></tr>`).join("");
+</script>
