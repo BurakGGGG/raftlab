@@ -1,0 +1,63 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: tests (python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Unit, protocol and meta tests
+        run: python -m unittest discover -s tests -q
+
+  fuzz:
+    name: the correct build must survive a fuzz campaign
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 300 seeds in the hostile world
+        run: python -m raftlab fuzz --bug none --profile hostile --seeds 300
+      - name: 300 randomly configured worlds
+        run: python -m raftlab fuzz --bug none --profile swarm --seeds 300
+
+  harness:
+    name: the harness must still catch a planted bug
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: a planted bug has to fail the run
+        run: |
+          if python -m raftlab fuzz --bug blind_truncate --seeds 20; then
+            echo "::error::the harness did not catch blind_truncate"
+            exit 1
+          fi
+          echo "caught, as expected"
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff mypy
+      - run: ruff check raftlab tests
+      - run: mypy raftlab --ignore-missing-imports
