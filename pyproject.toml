@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "raftlab"
+version = "2.0.0"
+description = "A Raft implementation and the deterministic simulator that proves it"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []          # standard library only, on purpose
+license = { text = "MIT" }
+
+[project.scripts]
+raftlab = "raftlab.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["raftlab*"]
+
+[project.urls]
+Homepage = "https://github.com/BurakGGGG/raftlab"
+Results = "https://github.com/BurakGGGG/raftlab/blob/main/RESULTS.md"
+
+[tool.ruff]
+line-length = 92
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+ignore = [
+    "E501",    # long lines: the formatter's job, and prose in docstrings wraps at 79
+    "B008",    # function call in a default argument: never used here
+    "B905",    # zip(strict=): the sequences are built together by construction
+    "SIM102",  # nested ifs: kept where the outer test and the inner test are
+               # different questions (is this new? is it safe?), which reads
+               # better than one long conjunction
+]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+warn_unused_ignores = true
