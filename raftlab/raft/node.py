@@ -20,8 +20,7 @@ this project exists to catch.
 from __future__ import annotations
 
 import random
-from collections.abc import Callable
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import Any
 
 from ..kv.statemachine import KVStateMachine, apply_pure

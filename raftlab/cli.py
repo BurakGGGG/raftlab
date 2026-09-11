@@ -19,7 +19,6 @@ from .runner import run_and_check
 from .shrink import Repro, shrink
 from .sim.config import PROFILES, SimConfig, swarm
 
-
 # The three builds compared by `ablation` and `recovery`: plain figure-2 Raft,
 # plus each of the two liveness extensions from the dissertation.
 PRE_VOTE_VARIANTS: list[tuple[dict[str, Any], str]] = [

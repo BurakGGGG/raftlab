@@ -58,6 +58,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install ruff mypy
+      # pinned so a new release of a linter cannot turn the badge red on its own
+      - run: pip install ruff==0.16.7 mypy==2.3.1
       - run: ruff check raftlab tests
       - run: mypy raftlab --ignore-missing-imports
